@@ -7,7 +7,18 @@ export const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
 
-export async function initDB(){
+
+export const getUsernameById = async (id: number)=>{
+    const {rows} = await pool.query(
+        "SELECT username FROM users WHERE id = $1",
+        [id]
+    );
+    return rows[0]?.username ?? null;
+};
+
+
+
+export default async function users(){
     try{
         await pool.query(
             `
