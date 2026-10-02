@@ -2,7 +2,6 @@ import {Router ,type Request , type Response} from 'express';
 import {pool} from '../db.js'
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken'
-import JWT_SECRET from '../config.js'
 import {createUserSchema , userIdParamsSchema } from '../schema/schema.js'
 import users from '../db.js'
 import {getUsernameById} from '../db.js'
@@ -13,56 +12,48 @@ import {generateToken} from '../config.js';
  const userRouter = Router();
 
 // 1. signup
-userRouter.post('/api/v1/user/signup' , async (req: Request , res: Response)=>{
-    const {username , password , firstName , lastName} = req.body;
-    const hashedPassword = await bcrypt.hash(password , 10);
+userRouter.post("/api/v1/user/signup", async (req: Request, res: Response) => {
+  // 1. Pehle validate
+  const parsed = createUserSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(411).json({ message: "Incorrect inputs" });
+  }
 
+  const { username, password, firstName, lastName } = parsed.data;
 
-    const {success} = createUserSchema.safeParse(req.body);
-
-    if(!success){
-        return res.status(411).json({
-            message: "email already taken / Incorrect inputs"
-        })
-    }
-
-
-    const existingUser = await getUsernameById(Number(req.params.id));
-    
-
-    if(existingUser){
-        return res.status(411).json({
-            message: "email already taken/incorrect inputs"
-        })
-    }
-
-    const insertQuery = 
-    `
-    INSERT INTO users (username , password , firstName , lastName)
-    VALUES ($1 , $2 , $3 , $4)
-    RETURNING id , username , firstName , lastName
-    `;
-
-    const result = await pool.query(insertQuery , [
-        username,
-        hashedPassword,
-        firstName,
-        lastName
-    ]);
-
-
-
-
-    // generate token
-    const {rows} = await pool.query(
-        "SELECT id, password FROM users WHERE username = $1",
-        
+  try {
+    // 2. Username already hai ya nahi (username se check)
+    const existingUser = await pool.query(
+      "SELECT id FROM users WHERE username = $1",
+      [username]
     );
-    const user = rows[0];
+    if (existingUser.rows.length > 0) {
+      return res.status(411).json({ message: "Username already taken" });
+    }
 
-    const token = generateToken(user.id);
-    res.json({token});
+    // 3. Ab hash karo
+    const hashedPassword = await bcrypt.hash(password, 10);
 
+    // 4. Insert, id RETURNING se hi mil jati hai
+    const { rows } = await pool.query(
+      `INSERT INTO users (username, password, first_name, last_name)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id`,
+      [username, hashedPassword, firstName, lastName]
+    );
+
+    // 5. Token
+    const token = generateToken(rows[0].id);
+    return res.status(200).json({ message: "User created successfully", token });
+  } catch (err: any) {
+    // do requests ek saath aayi to DB ka UNIQUE constraint pakad lega
+    if (err.code === "23505") {
+      return res.status(411).json({ message: "Username already taken" });
+    }
+    return res.status(500).json({ message: "Server error" });
+  }
+
+    
 
 });
 
@@ -102,9 +93,6 @@ userRouter.get('/api/v1/user/signin', async (req: Request , res: Response)=>{
 
    // 5. success
    return res.status(200).json({token});
-
-
-
 
 
 });

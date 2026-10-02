@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = "abdulShaikh123";
+export const JWT_SECRET = "abdulShaikh123";
 
 
 export const generateToken = (id: number): string =>{
