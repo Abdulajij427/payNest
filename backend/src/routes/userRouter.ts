@@ -8,6 +8,8 @@ import {getUsernameById} from '../db.js'
 import {generateToken} from '../config.js';
 import authMiddleware from '../middlewares/middlewares.js'
 import {getAllUsers} from '../db.js'
+import {searchSchema} from '../schema/schema.js'
+
 
  const userRouter = Router();
 
@@ -142,7 +144,7 @@ userRouter.put('/', authMiddleware , async( req: Request , res: Response)=>{
     })
 
     
-})
+});
 export default userRouter;
 
 

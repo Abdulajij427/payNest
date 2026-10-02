@@ -8,6 +8,7 @@ export const pool = new Pool({
 });
 
 
+
 export const getUsernameById = async (id: number)=>{
     const {rows} = await pool.query(
         "SELECT username FROM users WHERE id = $1",
@@ -74,3 +75,42 @@ export async function getAllUsers( limit = 20, offset = 0 ){
     );
     return rows;
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// agar usr search kare dusre user ko
+export async function searchUsers(
+    q: string,
+    currentUserId: number,
+    limit: number,
+    offset: number
+){
+    const {rows} = await pool.query(
+        `
+        SELECT id,
+            username,
+            first_name AS "firstName",
+            last_name AS "lastName"
+        FROM users
+        WHERE id <> $1
+            AND (username ILIKE $2
+                OR first_name ILIKE $2
+                OR last_name  ILIKE $2)
+        ORDER BY username
+        LIMIT $3 OFFSET $4            
+        `,
+        [currentUserId , limit , offset]
+    );
+    return rows;
+}
