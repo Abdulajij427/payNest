@@ -45,7 +45,7 @@ export  async function account(){
             `
             CREATE TABLE account(
             id SERIAL PRIMARY KEY,
-            balance FLOAT NOT NULL,
+            balance INTEGER NOT NULL,
             userId INTEGER REFERENCES users(id)
             );
             `
