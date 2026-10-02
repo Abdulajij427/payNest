@@ -6,8 +6,8 @@ import {createUserSchema , userIdParamsSchema } from '../schema/schema.js'
 import users from '../db.js'
 import {getUsernameById} from '../db.js'
 import {generateToken} from '../config.js';
-
-
+import authMiddleware from '../middlewares/middlewares.js'
+import {getAllUsers} from '../db.js'
 
  const userRouter = Router();
 
@@ -62,7 +62,7 @@ userRouter.post("/api/v1/user/signup", async (req: Request, res: Response) => {
 
 
 // signin
-userRouter.get('/api/v1/user/signin', async (req: Request , res: Response)=>{
+userRouter.get('/api/v1/user/signin' , async (req: Request , res: Response)=>{
     
 
     //1. Input validate
@@ -96,4 +96,52 @@ userRouter.get('/api/v1/user/signin', async (req: Request , res: Response)=>{
 
 
 });
+
+
+// get all users information
+userRouter.get('/bulk', authMiddleware ,async (req: Request , res: Response) =>{
+    try{
+        const page = Math.max(Number(req.query.page) || 1,1);
+        const limit = Math.min(Number(req.query.limit) || 20, 100);
+        const offset = (page - 1) * limit;
+
+        const users = await getAllUsers(limit , offset);
+
+        return res.status(200).json({page , limit , users});
+    } catch{
+        return res.status(500).json({message: "server error"});
+    }
+});
+
+
+
+
+//updating user information 
+userRouter.put('/', authMiddleware , async( req: Request , res: Response)=>{
+    const {success} = createUserSchema.safeParse(req.body);
+
+    if(!success){
+        return res.status(411).json({
+            message: "error while updating "
+        })
+    }
+
+
+    const {username , id} = req.body;
+    const result = await pool.query(
+        `UPDATE users
+         SET username = $1
+         WHERE id = $1
+         RETURNING id , username`,
+        [username , id]
+    )
+
+    res.json({
+        message: "updated successfully"
+    })
+
+    
+})
 export default userRouter;
+
+

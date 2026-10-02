@@ -39,3 +39,38 @@ export default async function users(){
 }
 
 
+export  async function account(){
+    try{
+        await pool.query(
+            `
+            CREATE TABLE account(
+            id SERIAL PRIMARY KEY,
+            balance FLOAT NOT NULL,
+            userId INTEGER REFERENCES users(id)
+            );
+            `
+        );
+        console.log("account table created or aleready exists")
+    } catch(error){
+        console.error("error creating table:",error);
+        throw error;
+    }
+}
+
+
+
+export async function getAllUsers( limit = 20, offset = 0 ){
+    const { rows } = await pool.query(
+        `
+        SELECT id, 
+            username,
+            first_name AS "firstName",
+            last_name AS "lastName"
+        FROM users
+        ORDER BY id
+        LIMIT $1 OFFSET $2    
+        `,
+        [limit , offset]
+    );
+    return rows;
+};
