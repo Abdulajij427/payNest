@@ -1,7 +1,38 @@
 import { Router ,type NextFunction , type Request , type Response} from 'express';
-import {pool} from '../db.js';
+import authMiddleware from '../middlewares/middlewares.js'
+import {transferSchema} from '../schema/schema.js'
+import {transferMoney} from '../db.js'
+
+
 
 const accountRouter = Router();
+
+accountRouter.post("/transfer", authMiddleware , async (req: Request , res: Response)=>{
+    const parsed = transferSchema.safeParse(req.body);
+
+    if(!parsed.success){
+        return res.status(411).json({message: "incorrect input"});
+    }
+
+    const {to , amount} = parsed.data;
+    const fromId = (req as any).userId;
+
+    if(fromId === to){
+        return res.status(400).json({message :"cannot transfer to yourself"});
+    }
+
+    try{
+        await transferMoney(fromId , to , amount);
+        res.status(200).json({message: "transfer successful"});
+    }catch(err: any){
+        if (err.message === "INSUFFICIENT_BALANCE")
+        return res.status(400).json({ message: "Insufficient balance" });
+        if (err.message === "ACCOUNT_NOT_FOUND")
+        return res.status(400).json({ message: "Invalid account" });
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 
 
 

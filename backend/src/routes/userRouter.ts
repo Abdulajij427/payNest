@@ -14,7 +14,7 @@ import {searchSchema} from '../schema/schema.js'
  const userRouter = Router();
 
 // 1. signup
-userRouter.post("/api/v1/user/signup", async (req: Request, res: Response) => {
+userRouter.post("/signup", async (req: Request, res: Response) => {
   // 1. Pehle validate
   const parsed = createUserSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -65,7 +65,7 @@ userRouter.post("/api/v1/user/signup", async (req: Request, res: Response) => {
 
 
 // signin
-userRouter.get('/api/v1/user/signin' , async (req: Request , res: Response)=>{
+userRouter.get('/signin' , async (req: Request , res: Response)=>{
     
 
     //1. Input validate

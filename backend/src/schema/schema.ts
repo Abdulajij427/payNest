@@ -26,3 +26,15 @@ export const userIdParamsSchema = z.object({
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 
 
+
+
+
+
+
+
+
+// transfer money
+export const transferSchema = z.object({
+    to: z.number().int(),
+    amount: z.number()
+});

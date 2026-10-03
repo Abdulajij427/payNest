@@ -81,7 +81,8 @@ export async function getAllUsers( limit = 20, offset = 0 ){
 
 
 
-// transactions or transfer money
+
+//transactions or transfer money
 export async function transferMoney(
     fromId: number,
     toId: number,
@@ -121,8 +122,11 @@ export async function transferMoney(
     } catch(err){
         await client.query("ROLLBACK");
         throw err;
+    }finally{
+        client.release();
     }
-}
+};
+
 
 
 
