@@ -5,7 +5,7 @@ export function Appbar({ firstName }: { firstName: string }) {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    navigate("/signin");
+    navigate("/signup");
   };
 
   return (

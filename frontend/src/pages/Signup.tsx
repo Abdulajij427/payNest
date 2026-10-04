@@ -5,7 +5,7 @@ import {InputBox} from "../components/InputBox"
 import {SubHeading} from "../components/SubHeading"
 import {useState} from "react"
 import axios from 'axios';
-
+import {useNavigate} from 'react-router-dom';
 
 export function Signup(){
     
@@ -13,6 +13,7 @@ export function Signup(){
     const [lastName , setLastName] = useState("");
     const [username , setUsername] = useState("");
     const [password , setPassword] = useState("");
+    const navigate = useNavigate();
 
     return (
         
@@ -24,7 +25,7 @@ export function Signup(){
                     <input onChange={e => {
                         setFirstName(e.target.value);
                     }}/> 
-                    <InputBox placeholder="John" label={"First Name"} onChange={(e:any)=>{
+                    <InputBox placeholder="John" label={"First Name"} onChange={(e)=>{
                         setFirstName(e.target.value);
                     }}/>
                     <InputBox onChange={(e)=>{
@@ -39,12 +40,15 @@ export function Signup(){
                     }} placeholder="123456" label={"Password"}/>
                     <div className="pt-4">
                         <Button onClick={async ()=>{
-                            await axios.post("http://localhost:3000/api/v1/user/signup", {
+                          const res =  await axios.post("http://localhost:3000/api/v1/user/signup", {
                                 username,
                                 password,
                                 firstName,
                                 lastName
-                            })
+                            });
+
+                            localStorage.setItem("token", res.data.token);
+                            navigate("/dashboard");
                         }} label={"Sign up"}/>
                     </div>
                     <BottomWarning label={"Already have an account"} buttonText={"Sign in"} to={"/Signin"}/>

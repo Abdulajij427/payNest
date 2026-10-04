@@ -15,20 +15,22 @@ export function Dashboard() {
 
     // token nahi hai to signin par bhejo
     if (!token) {
-      navigate("/signin");
+      navigate("/signup");
       return;
     }
 
     const headers = { Authorization: "Bearer " + token };
 
     axios
-      .get("http://localhost:3000/api/v1/account/balance", { headers })
-      .then((res) => setBalance(res.data.balance))
-      .catch(() => {
-        // token galat ya expire
+    .get("http://localhost:3000/api/v1/account/balance", { headers })
+    .then((res) => setBalance(res.data.balance))
+    .catch((err) => {
+        console.error("balance error:", err.response?.status, err.response?.data);
+        if (err.response?.status === 401) {
         localStorage.removeItem("token");
         navigate("/signin");
-      });
+        }
+    });
 
     axios
       .get("http://localhost:3000/api/v1/user/me", { headers })
