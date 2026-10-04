@@ -14,9 +14,9 @@ export const createUserSchema = z.object({
 
 // when user search info of other user
 export const searchSchema = z.object({
-    q: z.string(),
-    page: z.coerce.number().int(),
-    limit: z.coerce.number().int()
+  q: z.string().trim().max(50).default(""),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
 });
 
 export const userIdParamsSchema = z.object({
@@ -38,3 +38,7 @@ export const transferSchema = z.object({
     to: z.number().int(),
     amount: z.number()
 });
+
+
+
+

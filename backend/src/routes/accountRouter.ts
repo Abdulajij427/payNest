@@ -2,7 +2,7 @@ import { Router ,type NextFunction , type Request , type Response} from 'express
 import authMiddleware from '../middlewares/middlewares.js'
 import {transferSchema} from '../schema/schema.js'
 import {transferMoney} from '../db.js'
-
+import {getBalanceByUserId} from '../db.js'
 
 
 const accountRouter = Router();
@@ -35,7 +35,19 @@ accountRouter.post("/transfer", authMiddleware , async (req: Request , res: Resp
 });
 
 
+accountRouter.get("/balance", authMiddleware, async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).userId;
+        const balance = await getBalanceByUserId(userId);
 
-
+        if (balance === null) {
+            return res.status(404).json({ message: "Account not found" });
+        }
+        return res.status(200).json({ balance });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Server error" });
+    }
+});
 
 export default accountRouter;

@@ -9,63 +9,60 @@ import {generateToken} from '../config.js';
 import authMiddleware from '../middlewares/middlewares.js'
 import {getAllUsers} from '../db.js'
 import {searchSchema} from '../schema/schema.js'
-
+import { getUserById } from "../db.js";
 
  const userRouter = Router();
 
 // 1. signup
 userRouter.post("/signup", async (req: Request, res: Response) => {
-  // 1. Pehle validate
   const parsed = createUserSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(411).json({ message: "Incorrect inputs" });
   }
 
   const { username, password, firstName, lastName } = parsed.data;
+  const client = await pool.connect();
 
   try {
-    // 2. Username already hai ya nahi (username se check)
-    const existingUser = await pool.query(
-      "SELECT id FROM users WHERE username = $1",
-      [username]
-    );
-    if (existingUser.rows.length > 0) {
-      return res.status(411).json({ message: "Username already taken" });
-    }
-
-    // 3. Ab hash karo
     const hashedPassword = await bcrypt.hash(password, 10);
+    const balance = Math.floor(Math.random() * 10000) + 1; // 1 to 10000
 
-    // 4. Insert, id RETURNING se hi mil jati hai
-    const { rows } = await pool.query(
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
       `INSERT INTO users (username, password, first_name, last_name)
        VALUES ($1, $2, $3, $4)
        RETURNING id`,
       [username, hashedPassword, firstName, lastName]
     );
+    const userId = rows[0].id;
 
-    // 5. Token
-    const token = generateToken(rows[0].id);
+    await client.query(
+      `INSERT INTO account (user_id, balance) VALUES ($1, $2)`,
+      [userId, balance]
+    );
+
+    await client.query("COMMIT");
+
+    const token = generateToken(userId);
     return res.status(200).json({ message: "User created successfully", token });
   } catch (err: any) {
-    // do requests ek saath aayi to DB ka UNIQUE constraint pakad lega
+    await client.query("ROLLBACK");
     if (err.code === "23505") {
       return res.status(411).json({ message: "Username already taken" });
     }
+    console.error(err);
     return res.status(500).json({ message: "Server error" });
+  } finally {
+    client.release();
   }
-  
-
-    
-
 });
 
 
 
 
-
 // signin
-userRouter.get('/signin' , async (req: Request , res: Response)=>{
+userRouter.post('/signin' , async (req: Request , res: Response)=>{
     
 
     //1. Input validate
@@ -145,6 +142,46 @@ userRouter.put('/', authMiddleware , async( req: Request , res: Response)=>{
 
     
 });
+
+
+
+
+
+
+
+
+
+
+
+//user/ me 
+userRouter.get("/me", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId; // token se aaya
+
+    const user = await getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({ user });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
 export default userRouter;
 
 
