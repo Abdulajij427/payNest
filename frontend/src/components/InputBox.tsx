@@ -12,7 +12,7 @@ type InputBoxProps = {
 export function InputBox({label , placeholder , onChange , type}: InputBoxProps){
     return(
         <div>
-            <div className="text-sm font-medium text-left py-2">
+            <div className="text-sm font-medium text-left py-2 ">
                 {label}
             </div>
             <input 

@@ -38,8 +38,8 @@ export function Signup(){
                         setPassword(e.target.value)
                     }} placeholder="123456" label={"Password"}/>
                     <div className="pt-4">
-                        <Button onClick={()=>{
-                            axios.post("http://localhost:3000/api/v1/user/signup", {
+                        <Button onClick={async ()=>{
+                            await axios.post("http://localhost:3000/api/v1/user/signup", {
                                 username,
                                 password,
                                 firstName,
