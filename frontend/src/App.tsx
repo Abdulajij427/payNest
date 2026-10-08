@@ -1,34 +1,19 @@
-import { useState } from 'react'
-
-import {
-  BrowserRouter,
-  Route,
-  Routes,
-} from "react-router-dom";
-
-import {Signup} from "./pages/Signup.tsx";
-import {Signin} from "./pages/Signin.tsx";
-import{Dashboard} from "./pages/Dashboard.tsx";
-import {SendMoney} from "./pages/SendMoney.tsx";
-
-import './App.css'
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Signup } from "./pages/Signup.tsx";
+import { Signin } from "./pages/Signin.tsx";
+import { Dashboard } from "./pages/Dashboard.tsx";
+import { SendMoney } from "./pages/SendMoney.tsx";
 
 function App() {
-  
-
-  return (
-    <>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/signup" element={<Signup/>}/>
-          <Route path="/singin" element={<Signin/>}/>
-          <Route path="/dashboard" element={<Dashboard/>}/>
-          <Route path="/send" element={<SendMoney/>}/>
-        </Routes>
-      </BrowserRouter>
-    </>
-      
-  )
+  return <BrowserRouter><Routes>
+    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/signup" element={<Signup />} />
+    <Route path="/signin" element={<Signin />} />
+    <Route path="/singin" element={<Navigate to="/signin" replace />} />
+    <Route path="/dashboard" element={<Dashboard />} />
+    <Route path="/send" element={<SendMoney />} />
+    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+  </Routes></BrowserRouter>;
 }
 
-export default App
+export default App;
