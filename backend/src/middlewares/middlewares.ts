@@ -6,6 +6,12 @@ import {
     type NextFunction
 } from "express";
 
+declare global {
+    namespace Express {
+        interface Request { userId?: number; }
+    }
+}
+
 
 const authMiddleware = (
     req: Request,
@@ -16,7 +22,7 @@ const authMiddleware = (
 
     // 1. Check whether Authorization header exists
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(403).json({
+        return res.status(401).json({
             message: "Authorization header missing"
         });
     }
@@ -26,7 +32,7 @@ const authMiddleware = (
 
     // 3. Make sure token exists
     if (!token) {
-        return res.status(403).json({
+        return res.status(401).json({
             message: "Token missing"
         });
     }
@@ -39,13 +45,16 @@ const authMiddleware = (
         ) as JwtPayload;
 
         // 5. Attach userId to request
-        (req as any).userId = decoded.id;
+        if (typeof decoded.id !== "number") {
+            return res.status(401).json({ message: "Invalid token payload" });
+        }
+        req.userId = decoded.id;
 
         // 6. Continue to the next middleware/route
         return next();
 
     } catch (err) {
-        return res.status(403).json({
+        return res.status(401).json({
             message: "Invalid or expired token"
         });
     }

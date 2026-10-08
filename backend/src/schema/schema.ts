@@ -2,12 +2,22 @@ import {z} from 'zod';
 
 
 // user info
-export const createUserSchema = z.object({
-    username: z.string(),
-    password: z.string(),
-    firstName: z.string().optional(),
-    lastName: z.string().optional()
+export const signupSchema = z.object({
+    username: z.string().trim().email().max(100),
+    password: z.string().min(6).max(72),
+    firstName: z.string().trim().min(1).max(100),
+    lastName: z.string().trim().min(1).max(100)
 });
+
+export const signinSchema = z.object({
+    username: z.string().trim().email().max(100),
+    password: z.string().min(1).max(72)
+});
+
+export const updateUserSchema = z.object({
+    firstName: z.string().trim().min(1).max(100).optional(),
+    lastName: z.string().trim().min(1).max(100).optional(),
+}).refine((value) => value.firstName !== undefined || value.lastName !== undefined, { message: "At least one field is required" });
 
 
 
@@ -23,7 +33,7 @@ export const userIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
-export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type CreateUserInput = z.infer<typeof signupSchema>;
 
 
 
@@ -35,8 +45,8 @@ export type CreateUserInput = z.infer<typeof createUserSchema>;
 
 // transfer money
 export const transferSchema = z.object({
-    to: z.number().int(),
-    amount: z.number()
+    to: z.coerce.number().int().positive(),
+    amount: z.coerce.number().positive().finite().max(1_000_000)
 });
 
 

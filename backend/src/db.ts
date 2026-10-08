@@ -4,7 +4,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const pool = new Pool({
-    connectionString: process.env.DATABASE_URL
+    connectionString: process.env.DATABASE_URL,
+    max: 10,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
 });
 
 
@@ -54,6 +57,12 @@ export async function accounts() {
     console.error("error creating table:", error);
     throw error;
   }
+}
+
+export async function initializeDatabase() {
+  await users();
+  await accounts();
+  await pool.query("CREATE INDEX IF NOT EXISTS users_username_idx ON users (username)");
 }
 
 
@@ -197,6 +206,17 @@ export async function getUserById(id: number) {
      FROM users
      WHERE id = $1`,
     [id]
+  );
+  return rows[0] ?? null;
+}
+
+export async function updateUserProfile(id: number, firstName?: string, lastName?: string) {
+  const { rows } = await pool.query(
+    `UPDATE users
+     SET first_name = COALESCE($1, first_name), last_name = COALESCE($2, last_name)
+     WHERE id = $3
+     RETURNING id, username, first_name AS "firstName", last_name AS "lastName"`,
+    [firstName ?? null, lastName ?? null, id]
   );
   return rows[0] ?? null;
 }

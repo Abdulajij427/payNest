@@ -1,10 +1,16 @@
+import "dotenv/config";
 import jwt from "jsonwebtoken";
 
-export const JWT_SECRET = "abdulShaikh123";
+const secret = process.env.JWT_SECRET;
+if (!secret) {
+    throw new Error("JWT_SECRET must be set in the environment");
+}
+export const JWT_SECRET = secret;
+export const PORT = Number(process.env.PORT) || 3000;
 
 
-export const generateToken = (id: number): string =>{
-    return jwt.sign({id}, JWT_SECRET );
+export const generateToken = (id: number): string => {
+    return jwt.sign({ id }, JWT_SECRET, { expiresIn: "7d" });
 }
 
 

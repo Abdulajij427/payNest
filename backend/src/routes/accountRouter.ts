@@ -11,11 +11,11 @@ accountRouter.post("/transfer", authMiddleware , async (req: Request , res: Resp
     const parsed = transferSchema.safeParse(req.body);
 
     if(!parsed.success){
-        return res.status(411).json({message: "incorrect input"});
+        return res.status(400).json({message: "Enter a valid recipient and amount"});
     }
 
     const {to , amount} = parsed.data;
-    const fromId = (req as any).userId;
+    const fromId = req.userId!;
 
     if(fromId === to){
         return res.status(400).json({message :"cannot transfer to yourself"});
@@ -37,7 +37,7 @@ accountRouter.post("/transfer", authMiddleware , async (req: Request , res: Resp
 
 accountRouter.get("/balance", authMiddleware, async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).userId;
+        const userId = req.userId!;
         const balance = await getBalanceByUserId(userId);
 
         if (balance === null) {

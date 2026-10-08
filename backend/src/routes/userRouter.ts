@@ -1,23 +1,19 @@
 import {Router ,type Request , type Response} from 'express';
 import {pool} from '../db.js'
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken'
-import {createUserSchema , userIdParamsSchema } from '../schema/schema.js'
-import users from '../db.js'
-import {getUsernameById} from '../db.js'
+import { signupSchema, signinSchema, searchSchema, updateUserSchema } from '../schema/schema.js'
 import {generateToken} from '../config.js';
 import authMiddleware from '../middlewares/middlewares.js'
 import {getAllUsers} from '../db.js'
-import {searchSchema} from '../schema/schema.js'
-import { getUserById } from "../db.js";
+import { getUserById, searchUsers, updateUserProfile } from "../db.js";
 
  const userRouter = Router();
 
 // 1. signup
 userRouter.post("/signup", async (req: Request, res: Response) => {
-  const parsed = createUserSchema.safeParse(req.body);
+  const parsed = signupSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(411).json({ message: "Incorrect inputs" });
+    return res.status(400).json({ message: "Provide a valid email, password, and name" });
   }
 
   const { username, password, firstName, lastName } = parsed.data;
@@ -45,11 +41,11 @@ userRouter.post("/signup", async (req: Request, res: Response) => {
     await client.query("COMMIT");
 
     const token = generateToken(userId);
-    return res.status(200).json({ message: "User created successfully", token });
+    return res.status(201).json({ message: "User created successfully", token });
   } catch (err: any) {
     await client.query("ROLLBACK");
     if (err.code === "23505") {
-      return res.status(411).json({ message: "Username already taken" });
+      return res.status(409).json({ message: "Username already taken" });
     }
     console.error(err);
     return res.status(500).json({ message: "Server error" });
@@ -66,9 +62,9 @@ userRouter.post('/signin' , async (req: Request , res: Response)=>{
     
 
     //1. Input validate
-   const parsed = createUserSchema.safeParse(req.body);
+   const parsed = signinSchema.safeParse(req.body);
    if (!parsed.success){
-        return res.status(411).json({message : "Invalid input"});
+        return res.status(400).json({message : "Enter a valid email and password"});
    }
 
    const {username , password} = parsed.data;
@@ -88,7 +84,7 @@ userRouter.post('/signin' , async (req: Request , res: Response)=>{
 
 
    // 4. token banao
-   const token = jwt.sign({id: user.id} , process.env.JWT_SECRET as string );
+   const token = generateToken(user.id);
    
 
    // 5. success
@@ -116,31 +112,30 @@ userRouter.get('/bulk', authMiddleware ,async (req: Request , res: Response) =>{
 
 
 
-//updating user information 
-userRouter.put('/', authMiddleware , async( req: Request , res: Response)=>{
-    const {success} = createUserSchema.safeParse(req.body);
+userRouter.get("/search", authMiddleware, async (req: Request, res: Response) => {
+  const parsed = searchSchema.safeParse(req.query);
+  if (!parsed.success) return res.status(400).json({ message: "Invalid search parameters" });
+  try {
+    const { q, page, limit } = parsed.data;
+    const users = await searchUsers(q, req.userId!, limit, (page - 1) * limit);
+    return res.status(200).json({ page, limit, users });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
 
-    if(!success){
-        return res.status(411).json({
-            message: "error while updating "
-        })
-    }
-
-
-    const {username , id} = req.body;
-    const result = await pool.query(
-        `UPDATE users
-         SET username = $1
-         WHERE id = $1
-         RETURNING id , username`,
-        [username , id]
-    )
-
-    res.json({
-        message: "updated successfully"
-    })
-
-    
+userRouter.put('/', authMiddleware, async (req: Request, res: Response) => {
+  const parsed = updateUserSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Provide a valid name update" });
+  try {
+    const user = await updateUserProfile(req.userId!, parsed.data.firstName, parsed.data.lastName);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    return res.status(200).json({ message: "Profile updated successfully", user });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
 });
 
 
@@ -156,9 +151,9 @@ userRouter.put('/', authMiddleware , async( req: Request , res: Response)=>{
 //user/ me 
 userRouter.get("/me", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId; // token se aaya
+    const userId = req.userId;
 
-    const user = await getUserById(userId);
+    const user = await getUserById(userId!);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
